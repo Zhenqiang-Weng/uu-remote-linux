@@ -2,6 +2,10 @@
 
 **简体中文** | [English](README.en.md)
 
+> **个人二次开发版本**：基于 [VallierDev/uu-remote-linux](https://github.com/VallierDev/uu-remote-linux) v0.2.45，
+> 供个人使用。新增独立远控、设备兼容设置及 Mac 输入/图片辅助功能，见[本次改善清单](docs/personal-improvements.md)。
+> 原作者说明与 GPL-3.0 许可证保留如下。
+
 > **写在前面**
 >
 > 网易 UU 远程非常好用，但官网一直没有 Linux 版本。于是我借助 Claude 和 Codex，写了这个开源的 Linux 被控端：
@@ -564,6 +568,12 @@ GNOME 与官方 Mac 被控端的双向剪贴板尚未验证通过；此修改不
 - 按被控端原始分辨率解码，窗口缩放使用线性过滤；被控端分辨率变化时自动重启解码器。`UU_VIEWER_SIZE=WxH` 可改为固定的留黑边画布。
 
 SDL 远程画面窗口关闭本地输入法的文本组合，按物理键转发；输入中文时请使用被控端的输入法及其中英切换键（例如 Shift）。
+
+**个人版独立会话组件**：设备页的「独立远控 / 会话设置」可为每台设备生成独立入口，
+关闭主窗口后保持连接，并按设备选择中文字体、固定解码画布、Mac 常用 Ctrl 快捷键、Backspace 连删及手动图片传送。
+先运行 `contrib/independent-viewer/install.sh` 安装组件；配置和账号信息保存在本机。
+图片传送会短暂重连，按键适配只对 Debian 包 0.2.45 启用。安装、验证范围和限制见
+[独立会话组件说明](contrib/independent-viewer/README.md)。
 
 Mac 目标使用 macOS 原生键码，Windows / Linux 目标保留 Windows VK。键盘按物理键位置转发，不自动把 Ctrl 改成 Command；
 控制 Mac 时，PC 键盘的 Super / Win 键对应 Command。仅接受已验证的目标平台值 1（Windows / 本项目 Linux 主机）和 4（Mac），

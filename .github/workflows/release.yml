@@ -12,6 +12,7 @@ jobs:
   # GNOME/KDE Wayland engine: libei >= 1.1 first ships in Ubuntu 24.04, so this plugin needs
   # glibc >= 2.39. It is only loaded on portal sessions; X11 and wlroots hosts never open it.
   portal-plugin:
+    if: github.repository == 'VallierDev/uu-remote-linux'
     strategy:
       matrix:
         include:
@@ -33,6 +34,7 @@ jobs:
           path: target/release/libuu-portal.so
 
   build:
+    if: github.repository == 'VallierDev/uu-remote-linux'
     needs: portal-plugin
     strategy:
       matrix:
@@ -86,6 +88,7 @@ jobs:
 
   # One publisher, so the matrix legs never race to create the release.
   release:
+    if: github.repository == 'VallierDev/uu-remote-linux'
     needs: build
     runs-on: ubuntu-22.04
     steps:
@@ -105,6 +108,7 @@ jobs:
 
   # Headless NAS image (docker/), built from the release tarball published by the job above.
   docker:
+    if: github.repository == 'VallierDev/uu-remote-linux'
     needs: release
     runs-on: ubuntu-22.04
     steps:

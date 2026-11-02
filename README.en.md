@@ -2,6 +2,10 @@
 
 [简体中文](README.md) | **English**
 
+> **Personal derivative** of [VallierDev/uu-remote-linux](https://github.com/VallierDev/uu-remote-linux)
+> v0.2.45, with independent sessions, per-device compatibility settings and Mac input/image helpers.
+> See the [improvement record](docs/personal-improvements.md). The original author's notes and GPL-3.0 license follow.
+
 > **A note first**
 >
 > NetEase UU Remote (网易 UU 远程) is a great remote-desktop tool, but there is no Linux version on its
@@ -592,6 +596,14 @@ is unavailable without a desktop session. No default release behavior changes.
 No official "no desktop" error code was found for headless desktop offers, so the existing offer behavior is retained.
 
 ## Experimental native viewer (uuremote-viewer)
+
+**Personal independent-session companion**: the device page adds Independent remote
+and Session settings. Install with `contrib/independent-viewer/install.sh`.
+Per-device settings cover CJK fonts, a fixed decoder canvas, Mac editing shortcuts,
+held-Backspace repeats and manual image transfer. Closing the launcher preserves
+independent sessions. Image transfer briefly reconnects the desktop; the optional
+input adapter is gated to Debian package 0.2.45. See the
+[companion guide and acceptance limits](contrib/independent-viewer/README.md).
 
 See [SDL viewer video scheduling](docs/viewer-video-scheduling.md).
 
