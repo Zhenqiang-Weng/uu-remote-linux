@@ -160,7 +160,7 @@ def configure(device, name, platform):
     for field, title, description in [
         ("force_join", ui_text("接管已连接的设备", "Take over an occupied device"), ui_text("连接时允许接管另一台电脑或手机正在远控的设备。", "Allow connecting when another computer or phone is controlling this device.")),
         ("pc_shortcuts", ui_text("本机快捷键习惯", "PC-style editing shortcuts"), ui_text("常用 Ctrl 组合对应 Mac Command，保留 Ctrl+Alt。", "Use Command for common Ctrl editing chords; keep Ctrl+Alt.")),
-        ("backspace_repeat", ui_text("Backspace 连续删除", "Held Backspace"), ui_text("按住连续删除，松开后停止。", "Keep deleting while held; stop when released.")),
+        ("backspace_repeat", ui_text("按键长按连发", "Held-key repeat"), ui_text("字母、数字、符号和退格键长按连发，松开即停。", "Repeat letters, numbers, symbols and Backspace while held; stop on release.")),
         ("image_clipboard", ui_text("剪贴板图片传送", "Clipboard images"), ui_text("从设备图标菜单传送 PNG 图片，会短暂重连。", "Send PNG images from the device icon menu, with a brief reconnect.")),
     ]:
         controls[field] = switch_row(title, description, bool(entry.get(field, field == "force_join")), field == "force_join" or entry["platform"] == 4)

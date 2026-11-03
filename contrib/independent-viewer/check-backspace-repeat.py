@@ -47,7 +47,7 @@ try:
         assert event.key.window_id == 123
     expected = [(225, 1, 0), (42, 1, 0), (42, 0, 0), (42, 1, 0),
                 (42, 0, 0), (42, 1, 0), (42, 0, 0), (225, 0, 0),
-                (4, 1, 0), (4, 1, 1), (4, 0, 0)]
+                (4, 1, 0), (4, 0, 0), (4, 1, 0), (4, 0, 0)]
     assert outputs == expected, 'Unexpected SDL queue transformation'
     held = set()
     presses = 0
@@ -62,6 +62,6 @@ try:
     assert presses == 3 and not held
     assert symbols.SDL_PollEvent(C.byref(event)) == 0
     print(json.dumps({'backspace_presses': presses, 'all_keys_released': not held,
-                      'other_keys_unchanged': True, 'no_queued_repeat_tail': True}))
+                      'typing_repeat_supported': True, 'no_queued_repeat_tail': True}))
 finally:
     sdl.SDL_Quit()

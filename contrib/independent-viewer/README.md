@@ -67,16 +67,21 @@ desktop entries contain a hashed configuration key, not account credentials.
   也可指定覆盖所需字符的字体。不会改动系统 fontconfig。
 - 固定 1920×1080 解码画布：针对某些自动尺寸解码停留在加载画面的情况；需要时启用。
   不强制更改远端屏幕分辨率。
-- Backspace 连删：将本机长按产生的重复事件转换为按下 / 松开事件对。
+- 按键长按连发：字母、数字、空格、普通符号、小键盘字符及 Backspace 使用本机重复速度连续输入；
+  保留 Shift 大写/符号，松键或失焦即停止。字符快捷键不连发，Enter/Tab/Escape/功能键不额外连发。
 - 常用 Ctrl 快捷键对应 Command：A/C/V/X/Z/F/S/O/N/P/W/L/T/R，保留 Shift，
   保留 Ctrl+Alt 和其他未列出的组合。不按远端应用识别终端：启用后 Ctrl+C 是 Command+C，
   要发送真实 Control+C，请在设置中关闭该选项。
 - 图片传送：启用后，在该设备的 Dock / 应用菜单入口右键选择“传送剪贴板图片到 Mac”。
 
-Options select a CJK font, an optional fixed decoder canvas, held-Backspace repeats,
+Options select a CJK font, an optional fixed decoder canvas, held-key repeats,
 PC-style editing shortcuts, and a manual image-transfer action. Mapped Ctrl chords
 use Command, including in a terminal; disable the option to send literal Control+C.
 Unlisted, Ctrl+Alt, and physical Win/Command chords keep their existing mapping.
+Held-key repeat covers letters, digits, space, punctuation, printable keypad keys
+and Backspace at the local repeat rate, including Shift. Release/focus loss stops
+repeats. Character shortcuts and Enter/Tab/Escape/function keys do not gain repeats.
+Existing `backspace_repeat` settings also control typing repeats for compatibility.
 Taking over an occupied device is enabled by default using the viewer's existing
 `force_join=true` argument. Disable it to keep another computer/phone's session connected.
 
@@ -137,7 +142,7 @@ was verified; native Wayland activation remains unverified.
 python3 -m unittest discover -s contrib/independent-viewer -p 'test_*.py' -v
 cc -Wall -Wextra -Werror -shared -fPIC contrib/independent-viewer/sdl-input-compat.c -ldl -o /tmp/uu-input-test.so
 SDL_VIDEODRIVER=dummy UU_VIEWER_BACKSPACE_REPEAT=1 UU_VIEWER_PC_SHORTCUTS=1 UU_VIEWER_SHIFT_SYNC=1 \
-  LD_PRELOAD=/tmp/uu-input-test.so python3 contrib/independent-viewer/check-shift.py
+  LD_PRELOAD=/tmp/uu-input-test.so python3 contrib/independent-viewer/check-key-repeat.py
 ```
 
 测试使用虚构设备和 SDL dummy 窗口，不连接账号、不读取真实剪贴板、不发送真实按键。

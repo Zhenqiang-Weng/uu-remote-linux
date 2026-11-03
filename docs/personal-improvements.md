@@ -16,7 +16,7 @@ real screenshots and diagnostic logs are excluded from source commits.
 | Dock 图标 / Desktop identity | 每设备生成 `.desktop`，设置 SDL X11/Wayland app id；恢复最小化窗口 | X11/XWayland 复用已有 PID 已验证；原生 Wayland 激活仍待验证 |
 | 中文字体 / CJK font | 按设备选择支持 CJK 的字体，通过 `UU_VIEWER_FONT` 传入 | 不更改全局 fontconfig；覆盖范围取决于所选字体 |
 | 画面兼容 / Decoder compatibility | 可选 `UU_VIEWER_SIZE=1920x1080` 固定解码画布 | 针对自动尺寸黑屏/停留加载；实机恢复出帧、解码错误为 0 |
-| Backspace 连删 / Held Backspace | SDL2 重复事件转换为平衡的 release/press | 不记录按键；保留其他键重复行为，松键后没有排队尾巴 |
+| 按键长按连发 / Held-key repeat | 字母、数字、空格、符号、小键盘和 Backspace 的 SDL2 重复事件转为平衡的 release/press | 保留 Shift；快捷键不额外连发，松键/失焦停止；不记录按键 |
 | Shift 组合键 / Shift chords | 按 SDL 左右 Shift 快照修复遗漏的状态转换；独立进程隔离本地 XIM | 113 组队列检查；用户实机确认 @ 和大写正常；@ 取决于远端 ABC/US 布局 |
 | PC 风格快捷键 / PC-style editing | 可选将常用 Ctrl 编辑组合转换为 Command；保留 Shift、Ctrl+Alt 和未列出的组合 | 62 组 SDL 队列检查；不区分远端应用，终端真实 Ctrl+C 需关闭该选项 |
 | PNG 图片传送 / Manual PNG transfer | 主窗口“传送截图”和 Dock 操作复用文件/终端工具，写入 Mac pasteboard，再恢复桌面 | 实机验证用户复制的 PNG 上传与写入；先传后粘贴，不按 Enter、不发送聊天 |

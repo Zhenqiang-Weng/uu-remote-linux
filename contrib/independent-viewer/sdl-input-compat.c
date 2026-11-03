@@ -1,6 +1,6 @@
 /* Local SDL2 adapter for uu-remote-linux 0.2.45's repeat:false filter.
  * Uses the SDL 2.32 event ABI; never logs events or clipboard data.
- * Repeated Backspace becomes balanced release/press pairs. Optional PC-style
+ * Repeated typing keys become balanced release/press pairs. Optional PC-style
  * editing chords temporarily use Command, preserving other Control chords.
  * Shift snapshots repair missing modifier transitions (IME/focus changes).
  * Loaded only by the independent Mac entry, never by the main application.
@@ -33,6 +33,7 @@ static int queued_count, queued_next;
 static int physical_ctrl, sent_ctrl, physical_gui, sent_gui;
 static int sent_shift;
 static unsigned char mapped[512];
+static unsigned char held_repeat[512], repeat_blocked[512];
 static int mapped_count;
 
 static int flag(const char *name) {
@@ -70,11 +71,17 @@ static int edit_key(int scan) {
     }
     return 0;
 }
+static int typing_key(int scan) {
+    /* Letters, number row, space, punctuation and printable keypad keys.
+     * Enter/Tab/Escape/function keys are deliberately not repeated here. */
+    return (scan >= 4 && scan <= 39) || (scan >= 44 && scan <= 56) ||
+        (scan >= 84 && scan <= 87) || (scan >= 89 && scan <= 100) || scan == 103;
+}
 static void reset(void) {
     int i;
     physical_ctrl = sent_ctrl = physical_gui = sent_gui = mapped_count = 0;
     sent_shift = 0;
-    for (i = 0; i < 512; ++i) mapped[i] = 0;
+    for (i = 0; i < 512; ++i) mapped[i] = held_repeat[i] = repeat_blocked[i] = 0;
 }
 static void adapt(Event source, int shortcuts, int repeat, int shift_sync) {
     int scan, down, bit, i;
@@ -88,6 +95,14 @@ static void adapt(Event source, int shortcuts, int repeat, int shift_sync) {
     }
     scan = source.key.keysym.scancode;
     down = source.type == 0x300;
+    if (repeat && (scan == 42 || typing_key(scan))) {
+        if (!down) held_repeat[scan] = repeat_blocked[scan] = 0;
+        else if (!source.key.repeat) {
+            held_repeat[scan] = 1;
+            repeat_blocked[scan] = typing_key(scan) && (source.key.keysym.mod & 0x4fc0);
+        }
+        else if (!held_repeat[scan]) return; /* stale repeat after release/focus loss */
+    }
     if (shift_sync) {
         if (scan == 225 || scan == 229) {
             bit = scan == 225 ? 1 : 2;
@@ -154,7 +169,8 @@ static void adapt(Event source, int shortcuts, int repeat, int shift_sync) {
             release_gui(source); restore_ctrl(source);
         }
     }
-    if (repeat && down && source.key.repeat && scan == 42) {
+    if (repeat && down && source.key.repeat && (scan == 42 ||
+        (typing_key(scan) && !(source.key.keysym.mod & 0x4fc0) && !repeat_blocked[scan] && !mapped[scan]))) {
         Event released = source;
         released.key.type = 0x301;
         released.key.state = released.key.repeat = 0;
