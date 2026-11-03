@@ -6,6 +6,9 @@
 > 供个人使用。新增独立远控、设备兼容设置及 Mac 输入/图片辅助功能，见[本次改善清单](docs/personal-improvements.md)。
 > 原作者说明与 GPL-3.0 许可证保留如下。
 
+个人版独立入口默认允许接管已被其他设备远控的电脑，可在“会话设置”关闭；
+Mac 按键适配会恢复丢失的 Shift 状态，支持 `Shift+2` 和大写字母，详见[组件说明](contrib/independent-viewer/README.md)。
+
 > **写在前面**
 >
 > 网易 UU 远程非常好用，但官网一直没有 Linux 版本。于是我借助 Claude 和 Codex，写了这个开源的 Linux 被控端：

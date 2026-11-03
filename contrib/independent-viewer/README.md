@@ -61,6 +61,8 @@ desktop entries contain a hashed configuration key, not account credentials.
 
 ## 可选设置 / Options
 
+- 接管已连接的设备：默认启用，使用原程序已有的 `force_join=true`，可接管另一台
+  电脑或手机的远控连接。关闭后，已占用的设备仍由原控制端保持连接。
 - 字体文件：供 SDL 窗口和控制中心显示中文。自动选择可用的文泉驿 / Noto CJK 字体，
   也可指定覆盖所需字符的字体。不会改动系统 fontconfig。
 - 固定 1920×1080 解码画布：针对某些自动尺寸解码停留在加载画面的情况；需要时启用。
@@ -75,12 +77,25 @@ Options select a CJK font, an optional fixed decoder canvas, held-Backspace repe
 PC-style editing shortcuts, and a manual image-transfer action. Mapped Ctrl chords
 use Command, including in a terminal; disable the option to send literal Control+C.
 Unlisted, Ctrl+Alt, and physical Win/Command chords keep their existing mapping.
+Taking over an occupied device is enabled by default using the viewer's existing
+`force_join=true` argument. Disable it to keep another computer/phone's session connected.
+
+Mac 入口默认核对每个按键的左右 Shift 状态，补齐输入法或切换焦点时漏掉的按下/松开，
+使 `Shift+2`、大写字母等组合按正确顺序传输。`@` 对应 Mac 的 ABC / US 键盘布局；
+其他远端布局仍按物理键解释。该恢复不依赖“本机快捷键习惯”或“Backspace 连续删除”开关。
+独立窗口还单独设置 `XMODIFIERS=@im=none`，隔离本地 XIM；中文输入继续使用远端输入法。
+
+Mac entries reconcile left/right Shift snapshots before each key, recovering a
+missing press or release after an IME/focus change. `Shift+2` yields `@` with the
+remote ABC/US layout; other layouts retain their physical-key behavior. Recovery
+does not require the optional PC shortcuts or held-Backspace switches. Each independent
+window sets `XMODIFIERS=@im=none` to bypass local XIM; use the remote IME for Chinese.
 
 **按键适配仅支持 Debian 包版本 0.2.45，且只对已配置的 Mac 入口加载。**
 其他版本保留独立窗口功能，按键适配不加载。原程序二进制和全局键盘设置不被修改。
 v0.2.45 已有的本地输入法吞键修复是上游改动（PR #150），本组件不重复实现。
 
-**The optional SDL2 input adapter is gated to Debian package 0.2.45 and configured
+**The SDL2 input adapter is gated to Debian package 0.2.45 and configured
 Mac entries.** Other package versions run independent sessions without the adapter.
 The stock binary and global keyboard settings are not patched. Upstream PR #150's
 IME fix is already included in v0.2.45 and is not reimplemented here.
@@ -112,15 +127,20 @@ was verified; native Wayland activation remains unverified.
 ```sh
 python3 -m unittest discover -s contrib/independent-viewer -p 'test_*.py' -v
 cc -Wall -Wextra -Werror -shared -fPIC contrib/independent-viewer/sdl-input-compat.c -ldl -o /tmp/uu-input-test.so
-SDL_VIDEODRIVER=dummy UU_VIEWER_BACKSPACE_REPEAT=1 UU_VIEWER_PC_SHORTCUTS=1 \
-  LD_PRELOAD=/tmp/uu-input-test.so python3 contrib/independent-viewer/check-pc-shortcuts.py
+SDL_VIDEODRIVER=dummy UU_VIEWER_BACKSPACE_REPEAT=1 UU_VIEWER_PC_SHORTCUTS=1 UU_VIEWER_SHIFT_SYNC=1 \
+  LD_PRELOAD=/tmp/uu-input-test.so python3 contrib/independent-viewer/check-shift.py
 ```
 
 测试使用虚构设备和 SDL dummy 窗口，不连接账号、不读取真实剪贴板、不发送真实按键。
 当前实机验证范围：GNOME Wayland/XWayland 控制官方 Mac，独立窗口关闭/重开、
-中文字体、固定解码画布、图片写入及重连。按键状态转换另有 SDL 队列检查。
+中文字体、固定解码画布、图片写入及重连；用户确认修复后 `@` 和大写字母输入正常。
+按键状态转换另有 SDL 队列检查。
 
 Tests use fixture devices and SDL's dummy video backend, never a real clipboard
 or keyboard. Live acceptance covered GNOME Wayland/XWayland to an official Mac,
 independent window lifecycle, CJK font/canvas compatibility, and image pasteboard
-write/reconnect. Shortcut/modifier sequences are covered by real SDL queue tests.
+write/reconnect. The user confirmed that `@` and uppercase letters work after the
+fix was installed. Shortcut/modifier sequences are covered by real SDL queue tests.
+Shift recovery covers both sides, `Shift+2`, A–Z, missing press/release, and focus
+changes (113 scenarios). Takeover/target routing is checked with fixture devices;
+an end-to-end two-controller takeover test remains pending.

@@ -39,6 +39,7 @@ try:
         event.key.state = down
         event.key.repeat = repeat
         event.key.keysym.scancode = scan
+        event.key.keysym.mod = 1 if scan == 225 and down or scan == 42 else 0
         assert sdl.SDL_PushEvent(C.byref(event)) == 1
     outputs = []
     while symbols.SDL_PollEvent(C.byref(event)):

@@ -12,10 +12,12 @@ real screenshots and diagnostic logs are excluded from source commits.
 |---|---|---|
 | 界面整理 / UI polish | 独立会话卡片、统一系统图标、分组开关和字体选择；跟随保存的语言及主题 | 中英、浅色/深色界面检查；以虚构设备生成预览 |
 | 独立远控窗口 / Independent sessions | 主窗口设备页启动独立用户服务；同一设备重复打开复用会话 | 关闭主窗口后继续推流；注销账号明确停止独立会话 |
+| 接管设备 / Takeover | 独立入口默认传入已有的 force_join=true；会话设置可关闭 | 虚构的多个设备分别路由到正确 ID；不改协议、不自动关闭其他本地设备窗口 |
 | Dock 图标 / Desktop identity | 每设备生成 `.desktop`，设置 SDL X11/Wayland app id；恢复最小化窗口 | X11/XWayland 复用已有 PID 已验证；原生 Wayland 激活仍待验证 |
 | 中文字体 / CJK font | 按设备选择支持 CJK 的字体，通过 `UU_VIEWER_FONT` 传入 | 不更改全局 fontconfig；覆盖范围取决于所选字体 |
 | 画面兼容 / Decoder compatibility | 可选 `UU_VIEWER_SIZE=1920x1080` 固定解码画布 | 针对自动尺寸黑屏/停留加载；实机恢复出帧、解码错误为 0 |
 | Backspace 连删 / Held Backspace | SDL2 重复事件转换为平衡的 release/press | 不记录按键；保留其他键重复行为，松键后没有排队尾巴 |
+| Shift 组合键 / Shift chords | 按 SDL 左右 Shift 快照修复遗漏的状态转换；独立进程隔离本地 XIM | 113 组队列检查；用户实机确认 @ 和大写正常；@ 取决于远端 ABC/US 布局 |
 | PC 风格快捷键 / PC-style editing | 可选将常用 Ctrl 编辑组合转换为 Command；保留 Shift、Ctrl+Alt 和未列出的组合 | 62 组 SDL 队列检查；不区分远端应用，终端真实 Ctrl+C 需关闭该选项 |
 | PNG 图片传送 / Manual PNG transfer | Dock 操作复用文件和终端工具，将图片写入 Mac pasteboard，再恢复桌面 | 实机完成图片写入；明确短暂重连，不按 Enter、不发送聊天 |
 

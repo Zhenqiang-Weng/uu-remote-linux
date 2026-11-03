@@ -158,11 +158,12 @@ def configure(device, name, platform):
 
     controls = {}
     for field, title, description in [
+        ("force_join", ui_text("接管已连接的设备", "Take over an occupied device"), ui_text("连接时允许接管另一台电脑或手机正在远控的设备。", "Allow connecting when another computer or phone is controlling this device.")),
         ("pc_shortcuts", ui_text("本机快捷键习惯", "PC-style editing shortcuts"), ui_text("常用 Ctrl 组合对应 Mac Command，保留 Ctrl+Alt。", "Use Command for common Ctrl editing chords; keep Ctrl+Alt.")),
         ("backspace_repeat", ui_text("Backspace 连续删除", "Held Backspace"), ui_text("按住连续删除，松开后停止。", "Keep deleting while held; stop when released.")),
         ("image_clipboard", ui_text("剪贴板图片传送", "Clipboard images"), ui_text("从设备图标菜单传送 PNG 图片，会短暂重连。", "Send PNG images from the device icon menu, with a brief reconnect.")),
     ]:
-        controls[field] = switch_row(title, description, bool(entry.get(field)), entry["platform"] == 4)
+        controls[field] = switch_row(title, description, bool(entry.get(field, field == "force_join")), field == "force_join" or entry["platform"] == 4)
     size = switch_row(ui_text("画面兼容模式", "Video compatibility"), ui_text("固定 1920×1080 画布，用于部分加载或显示异常。", "Use a fixed 1920×1080 canvas for loading/display issues."), entry.get("UU_VIEWER_SIZE") == "1920x1080")
     fonts = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
     fonts.get_style_context().add_class("uu-setting-card")
@@ -201,7 +202,7 @@ def configure(device, name, platform):
             error.set_text(ui_text("请选择存在的字体文件，或留空使用默认值。", "Choose an existing font file, or leave the field empty."))
             continue
         for field, check in controls.items():
-            entry[field] = check.get_active() and entry["platform"] == 4
+            entry[field] = check.get_active() and (field == "force_join" or entry["platform"] == 4)
         entry["UU_VIEWER_SIZE"] = "1920x1080" if size.get_active() else ""
         entry["UU_VIEWER_FONT"] = value
         save_entry(key, entry)
@@ -368,6 +369,9 @@ def run(key):
     environment["SDL_VIDEO_WAYLAND_WMCLASS"] = app_id
     environment["SDL_VIDEO_X11_WMCLASS"] = app_id
     environment["UU_VIEWER_DEVICE_NAME"] = entry.get("name") or "Remote device"
+    # Forward physical keys to the remote IME. XIM's XFilterEvent runs even
+    # after SDL_StopTextInput, so disconnect this session's local XIM only.
+    environment["XMODIFIERS"] = "@im=none"
     for variable in ("UU_VIEWER_FONT", "UU_VIEWER_SIZE"):
         if variable in entry:
             if entry[variable]:
@@ -377,7 +381,7 @@ def run(key):
     # The stock 0.2.45 viewer drops repeated keydown events. Keep this narrow
     # SDL2 adapter scoped to the requested Mac entry and this package version.
     adapter = Path.home() / ".local/lib/uuremote-independent/libuuremote-backspace-repeat.so"
-    if entry.get("platform") == 4 and (entry.get("backspace_repeat") is True or entry.get("pc_shortcuts") is True) and adapter.is_file():
+    if entry.get("platform") == 4 and adapter.is_file():
         version = subprocess.run(
             ["/usr/bin/dpkg-query", "-W", "-f=${Version}", "uu-remote-linux"],
             capture_output=True, text=True, timeout=5,
@@ -386,14 +390,15 @@ def run(key):
             previous = environment.get("LD_PRELOAD", "")
             environment["LD_PRELOAD"] = str(adapter) + ((":" + previous) if previous else "")
             environment["UU_VIEWER_BACKSPACE_REPEAT"] = "1" if entry.get("backspace_repeat") else "0"
-            if entry.get("pc_shortcuts") is True:
-                environment["UU_VIEWER_PC_SHORTCUTS"] = "1"
+            environment["UU_VIEWER_PC_SHORTCUTS"] = "1" if entry.get("pc_shortcuts") else "0"
+            environment["UU_VIEWER_SHIFT_SYNC"] = "1"
     environment.pop("UU_VIEWER_COMMANDS", None)
     environment.pop("UU_VIEWER_DUMP_FRAME", None)
     environment.pop("UU_VIEWER_DUMP_FRAME_INDEX", None)
     os.umask(0o077)
     executable = viewer_path(entry)
-    arguments = [executable, "connect", entry["device_id"], "false", "-", "echo", "legacy"]
+    force = "true" if entry.get("force_join", True) is True else "false"
+    arguments = [executable, "connect", entry["device_id"], force, "-", "echo", "legacy"]
     os.execve(executable, arguments, environment)
 
 

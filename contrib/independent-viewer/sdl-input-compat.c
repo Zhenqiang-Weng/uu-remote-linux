@@ -2,6 +2,7 @@
  * Uses the SDL 2.32 event ABI; never logs events or clipboard data.
  * Repeated Backspace becomes balanced release/press pairs. Optional PC-style
  * editing chords temporarily use Command, preserving other Control chords.
+ * Shift snapshots repair missing modifier transitions (IME/focus changes).
  * Loaded only by the independent Mac entry, never by the main application.
  */
 typedef unsigned int Uint32;
@@ -30,6 +31,7 @@ extern char *getenv(const char *);
 static Event queued[16];
 static int queued_count, queued_next;
 static int physical_ctrl, sent_ctrl, physical_gui, sent_gui;
+static int sent_shift;
 static unsigned char mapped[512];
 static int mapped_count;
 
@@ -71,9 +73,10 @@ static int edit_key(int scan) {
 static void reset(void) {
     int i;
     physical_ctrl = sent_ctrl = physical_gui = sent_gui = mapped_count = 0;
+    sent_shift = 0;
     for (i = 0; i < 512; ++i) mapped[i] = 0;
 }
-static void adapt(Event source, int shortcuts, int repeat) {
+static void adapt(Event source, int shortcuts, int repeat, int shift_sync) {
     int scan, down, bit, i;
     /* Focus loss is followed by the stock viewer's release_all(). */
     if (source.type == 0x100 || (source.type == 0x200 &&
@@ -85,6 +88,25 @@ static void adapt(Event source, int shortcuts, int repeat) {
     }
     scan = source.key.keysym.scancode;
     down = source.type == 0x300;
+    if (shift_sync) {
+        if (scan == 225 || scan == 229) {
+            bit = scan == 225 ? 1 : 2;
+            if (down) sent_shift |= bit; else sent_shift &= ~bit;
+        } else if (down) {
+            /* SDL attaches the current left/right Shift snapshot to each key.
+             * A standalone Shift transition may be lost to XIM or while focus
+             * changes. Repair it before the key, and repair a missed release
+             * before the next unshifted key. Do not synthesize typed text. */
+            int wanted = source.key.keysym.mod & 3;
+            for (i = 1; i <= 2; i <<= 1)
+                if ((sent_shift & i) && !(wanted & i))
+                    modifier(source, i == 1 ? 225 : 229, 0);
+            for (i = 1; i <= 2; i <<= 1)
+                if ((wanted & i) && !(sent_shift & i))
+                    modifier(source, i == 1 ? 225 : 229, 1);
+            sent_shift = wanted;
+        }
+    }
     if (shortcuts) {
         if (scan == 224 || scan == 228) {
             bit = scan == 224 ? 1 : 2;
@@ -145,7 +167,7 @@ static void adapt(Event source, int shortcuts, int repeat) {
 int SDL_PollEvent(Event *event) {
     typedef int (*Poll)(Event *);
     static Poll poll;
-    static int repeat = -1, shortcuts;
+    static int repeat = -1, shortcuts, shift_sync;
     if (!poll)
         poll = (Poll)dlsym((void *)-1, "SDL_PollEvent");
     if (!poll)
@@ -153,15 +175,16 @@ int SDL_PollEvent(Event *event) {
     if (repeat < 0) {
         repeat = flag("UU_VIEWER_BACKSPACE_REPEAT");
         shortcuts = flag("UU_VIEWER_PC_SHORTCUTS");
+        shift_sync = flag("UU_VIEWER_SHIFT_SYNC");
     }
-    if (!repeat && !shortcuts)
+    if (!repeat && !shortcuts && !shift_sync)
         return poll(event);
     while (queued_next == queued_count) {
         Event source;
         queued_next = queued_count = 0;
         if (!event) return poll(event);
         if (!poll(&source)) return 0;
-        adapt(source, shortcuts, repeat);
+        adapt(source, shortcuts, repeat, shift_sync);
     }
     if (event) {
         *event = queued[queued_next++];

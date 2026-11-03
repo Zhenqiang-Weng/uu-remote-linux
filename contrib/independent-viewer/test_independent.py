@@ -2,6 +2,7 @@ import importlib.machinery
 import importlib.util
 import json
 import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -96,6 +97,41 @@ class IndependentEntryTests(unittest.TestCase):
             self.assertEqual(helper.launch(key), 0)
             focus.assert_called_once_with(helper.paths(key)[1], helper.paths(key)[2])
             run.assert_not_called()
+
+    def test_connect_can_take_over_and_keeps_the_selected_device(self):
+        first, _ = helper.setup('fixture-device-one', 'Mac', 4)
+        second, entry = helper.setup('fixture-device-two', 'PC', 1)
+        for key, device in [(first, 'fixture-device-one'), (second, 'fixture-device-two')]:
+            with patch.object(helper.os, 'execve') as execute, \
+                    patch.object(helper.Path, 'home', return_value=self.root), \
+                    patch.object(helper.os, 'umask'):
+                helper.run(key)
+            executable, args, environment = execute.call_args.args
+            self.assertEqual(executable, str(self.executable))
+            self.assertEqual(args[1:], ['connect', device, 'true', '-', 'echo', 'legacy'])
+            self.assertEqual(environment['XMODIFIERS'], '@im=none')
+        entry['force_join'] = False
+        helper.save_entry(second, entry)
+        with patch.object(helper.os, 'execve') as execute, patch.object(helper.os, 'umask'):
+            helper.run(second)
+        self.assertEqual(execute.call_args.args[1][3], 'false')
+
+    def test_shift_recovery_does_not_require_optional_shortcuts_or_repeat(self):
+        key, _ = helper.setup('fixture-device-one', 'Mac', 4)
+        adapter = self.root / '.local/lib/uuremote-independent/libuuremote-backspace-repeat.so'
+        adapter.parent.mkdir(parents=True)
+        adapter.touch()
+        with patch.object(helper.Path, 'home', return_value=self.root), \
+                patch.object(helper.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, '0.2.45')), \
+                patch.object(helper.os, 'execve') as execute, \
+                patch.object(helper.os, 'umask'), \
+                patch.dict(os.environ, {'UU_VIEWER_PC_SHORTCUTS': '1'}):
+            helper.run(key)
+        environment = execute.call_args.args[2]
+        self.assertEqual(environment['UU_VIEWER_SHIFT_SYNC'], '1')
+        self.assertEqual(environment['UU_VIEWER_PC_SHORTCUTS'], '0')
+        self.assertEqual(environment['UU_VIEWER_BACKSPACE_REPEAT'], '0')
+        self.assertIn(str(adapter), environment['LD_PRELOAD'])
 
 
 if __name__ == '__main__':
