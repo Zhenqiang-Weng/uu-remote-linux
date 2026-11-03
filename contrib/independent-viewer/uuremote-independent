@@ -56,8 +56,11 @@ def setup(device, name, platform):
             raise ValueError("Device entry collision")
     else:
         entry = {"device_id": device, "key": key, "UU_VIEWER_FONT": default_font()}
+    # A launcher explicitly supplies its own binary after an upgrade. Reuse the
+    # saved path only for standalone entries; otherwise they can stay on an old package forever.
+    selected_viewer = viewer_path() if os.environ.get("UU_VIEWER_EXECUTABLE") else viewer_path(entry)
     entry.update(name=" ".join(name.replace("\0", "").split()) or "Remote device",
-                 platform=int(platform), viewer=viewer_path(entry))
+                 platform=int(platform), viewer=selected_viewer)
     save_entry(key, entry)
     return key, entry
 

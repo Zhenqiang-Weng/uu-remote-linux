@@ -10,7 +10,7 @@ The app retains the original UU Remote Linux Viewer name and unofficial window t
 
 Independent sessions allow taking over an occupied device by default; disable this in Session settings.
 The Mac input adapter repairs missing Shift transitions for `Shift+2` and uppercase letters.
-See the [companion guide](contrib/independent-viewer/README.md) for details.
+Native SDL input includes left/right modifier recovery (upstream #165). Opening an independent entry from an updated launcher refreshes its saved viewer path. After updating the viewer and correcting the stale entry, the user confirmed Mac lock-screen input works in the local deployment. See the [companion guide](contrib/independent-viewer/README.md) for details.
 For screenshots, click **Send screenshot** in the personal viewer before pasting on the Mac; Ctrl+V alone does not transfer Linux images.
 **Session settings → Held-key repeat** repeats letters, numbers, symbols and Backspace at the local rate, stopping on release.
 

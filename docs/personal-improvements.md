@@ -17,7 +17,8 @@ real screenshots and diagnostic logs are excluded from source commits.
 | 中文字体 / CJK font | 按设备选择支持 CJK 的字体，通过 `UU_VIEWER_FONT` 传入 | 不更改全局 fontconfig；覆盖范围取决于所选字体 |
 | 画面兼容 / Decoder compatibility | 可选 `UU_VIEWER_SIZE=1920x1080` 固定解码画布 | 针对自动尺寸黑屏/停留加载；实机恢复出帧、解码错误为 0 |
 | 按键长按连发 / Held-key repeat | 字母、数字、空格、符号、小键盘和 Backspace 的 SDL2 重复事件转为平衡的 release/press | 保留 Shift；快捷键不额外连发，松键/失焦停止；不记录按键 |
-| Shift 组合键 / Shift chords | 按 SDL 左右 Shift 快照修复遗漏的状态转换；独立进程隔离本地 XIM | 113 组队列检查；用户实机确认 @ 和大写正常；@ 取决于远端 ABC/US 布局 |
+| 多键组合 / Modifier combinations | 原生 SDL 路径合入上游 #165 的左右 Shift/Ctrl/Alt/Win 状态恢复；独立进程隔离本地 XIM | 4 项原生回归测试；更新程序和旧入口后用户确认 Mac 锁屏输入恢复；@ 取决于远端 ABC/US 布局 |
+| 独立入口更新 / Entry upgrades | 新版主窗口明确传入的 viewer 路径覆盖旧配置；直接打开桌面入口仍使用已保存路径 | 配置测试覆盖替换路径并保留偏好；避免主窗口已更新而独立连接仍调用旧系统程序 |
 | PC 风格快捷键 / PC-style editing | 可选将常用 Ctrl 编辑组合转换为 Command；保留 Shift、Ctrl+Alt 和未列出的组合 | 62 组 SDL 队列检查；不区分远端应用，终端真实 Ctrl+C 需关闭该选项 |
 | PNG 图片传送 / Manual PNG transfer | 主窗口“传送截图”和 Dock 操作复用文件/终端工具，写入 Mac pasteboard，再恢复桌面 | 实机验证用户复制的 PNG 上传与写入；先传后粘贴，不按 Enter、不发送聊天 |
 | 新旧入口区分 / Local launcher | 独立桌面 ID，隐藏旧菜单项；用户命令指向本地构建，显示名称保留原名和“非官方”标记 | 保留正式版程序，避免应用菜单继续命中旧启动入口 |

@@ -58,6 +58,22 @@ class IndependentEntryTests(unittest.TestCase):
         self.assertEqual(len(desktops), 1)
         self.assertIn('[Desktop Action SendClipboardImage]', desktops[0].read_text())
 
+    def test_explicit_launcher_upgrade_updates_saved_binary_and_keeps_preferences(self):
+        key, entry = helper.setup('fixture-device-one', 'Mac', 4)
+        entry['pc_shortcuts'] = True
+        helper.save_entry(key, entry)
+        newer = self.root / 'updated-viewer'
+        newer.write_text('#!/bin/sh\nexit 0\n')
+        newer.chmod(0o755)
+        with patch.dict(os.environ, {'UU_VIEWER_EXECUTABLE': str(newer)}):
+            again, updated = helper.setup('fixture-device-one', 'Mac', 4)
+        self.assertEqual(key, again)
+        self.assertEqual(updated['viewer'], str(newer))
+        self.assertTrue(updated['pc_shortcuts'])
+        with patch.dict(os.environ, {'UU_VIEWER_EXECUTABLE': ''}):
+            _, standalone = helper.setup('fixture-device-one', 'Mac', 4)
+        self.assertEqual(standalone['viewer'], str(newer))
+
     def test_names_cannot_inject_a_desktop_action(self):
         key, entry = helper.setup('fixture-device-two', 'name\nExec=bad\r\n[Desktop Action bad]', 4)
         text = (self.root / 'data/applications' / (helper.paths(key)[1] + '.desktop')).read_text()

@@ -9,7 +9,7 @@
 应用名称沿用原名 UU Remote Linux Viewer，窗口保留“非官方”标记。
 
 个人版独立入口默认允许接管已被其他设备远控的电脑，可在“会话设置”关闭；
-Mac 按键适配会恢复丢失的 Shift 状态，支持 `Shift+2` 和大写字母，详见[组件说明](contrib/independent-viewer/README.md)。
+原生 SDL 输入已包含左右 Shift/Ctrl/Alt/Win 修饰键恢复（上游 #165）；独立入口从新版主窗口打开时会更新保存的程序路径。更新程序并修正旧入口后，用户已确认本机 Mac 锁屏输入恢复，详见[组件说明](contrib/independent-viewer/README.md)。
 截图请先点个人版主窗口的“传送截图”，完成后再到 Mac 粘贴；直接 Ctrl+V 不会传输 Linux 图片。
 “会话设置 → 按键长按连发”支持字母、数字、符号和 Backspace，沿用本机连发速度，松键即停。
 
