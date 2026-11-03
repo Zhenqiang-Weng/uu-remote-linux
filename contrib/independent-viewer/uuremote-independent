@@ -405,10 +405,13 @@ def run(key):
 def main():
     if sys.argv[1:] == ["--stop-all"]:
         return subprocess.run(["systemctl", "--user", "stop", "uuremote-independent-*.service"], timeout=15).returncode
-    if len(sys.argv) == 5 and sys.argv[1] in {"open", "configure"}:
+    if len(sys.argv) == 5 and sys.argv[1] in {"open", "configure", "image"}:
         if sys.argv[1] == "configure":
             return configure(*sys.argv[2:])
         key, _ = setup(*sys.argv[2:])
+        if sys.argv[1] == "image":
+            image = Path(__file__).resolve().with_name("uuremote-image-clipboard")
+            return subprocess.run(["/usr/bin/python3", str(image), key]).returncode
         return launch(key)
     if len(sys.argv) == 2:
         return launch(sys.argv[1])

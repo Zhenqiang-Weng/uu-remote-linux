@@ -23,18 +23,21 @@ fn independent_helper(exe: &std::path::Path) -> Option<std::path::PathBuf> {
         .into_iter().flatten().find(|p|p.metadata().is_ok_and(|m|m.is_file() && m.permissions().mode()&0o111!=0))
 }
 
-fn independent(exe: &std::path::Path, id: &str, name: &str, platform: i64, settings: bool) -> Result<(), String> {
+fn independent(exe: &std::path::Path, id: &str, name: &str, platform: i64, action: &str) -> Result<(), String> {
     let helper=independent_helper(exe).ok_or_else(||crate::i18n::s("尚未安装独立会话组件", "The independent-session companion is not installed").to_owned())?;
     let mut child=tokio::process::Command::new(helper)
-        .args([if settings{"configure"}else{"open"},id,name,&platform.to_string()])
+        .args([action,id,name,&platform.to_string()])
         .env("UU_VIEWER_EXECUTABLE",exe).stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null())
         .kill_on_drop(false).spawn().map_err(|_|crate::i18n::s("无法打开独立会话组件", "Could not open the independent-session companion"))?;
     // This short-lived companion launches a user service. It is deliberately not
     // registered in `sessions`, whose children are stopped when the launcher closes.
+    let image=action=="image";
     tokio::spawn(async move {
         if !child.wait().await.is_ok_and(|s|s.success()) {
-            toast(crate::i18n::s("独立会话操作失败，请检查组件配置", "Independent session failed; check the companion configuration"));
+            toast(if image {crate::i18n::s("图片传送失败：请开启图片传送并重新复制 PNG 截图", "Image transfer failed: enable clipboard images and copy a PNG screenshot again")} else {crate::i18n::s("独立会话操作失败，请检查组件配置", "Independent session failed; check the companion configuration")});
+        } else if image {
+            toast(crate::i18n::s("图片已放入 Mac 剪贴板，请在远端聊天框粘贴", "Image copied to the Mac clipboard; paste in the remote chat box"));
         }
     });
     Ok(())
@@ -212,10 +215,12 @@ pub async fn run(credentials: impl Fn() -> Result<crate::auth::Credentials, Stri
                         .kill_on_drop(true).spawn().ok();
                     if login.is_none() { set_login(false, "", crate::i18n::s("找不到配套的 uuremote-server","The matching uuremote-server was not found"), ""); }
                 }
-                ["connect", id, kind @ ("independent" | "independent-settings")] => {
-                    if *kind=="independent" && !replace(&mut sessions,id).await {continue}
+                ["connect", id, kind @ ("independent" | "independent-settings" | "independent-image")] => {
+                    if *kind=="independent-image" && platforms.get(*id)!=Some(&4) {continue}
+                    if matches!(*kind,"independent"|"independent-image") && !replace(&mut sessions,id).await {continue}
                     if let Some(name)=names.get(*id) {
-                        if let Err(error)=independent(&exe,id,name,platforms.get(*id).copied().unwrap_or(0),*kind=="independent-settings") {toast(&error);}
+                        let action=match *kind {"independent-settings"=>"configure","independent-image"=>"image",_=>"open"};
+                        if let Err(error)=independent(&exe,id,name,platforms.get(*id).copied().unwrap_or(0),action) {toast(&error);}
                     } else {toast(crate::i18n::s("设备已变化，请刷新列表", "The device changed; refresh the list"));}
                 }
                 ["connect", id, kind] if matches!(*kind, "desktop" | "watch") => {

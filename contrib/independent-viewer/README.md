@@ -34,12 +34,12 @@ cargo build --release --locked --features native-viewer,viewer-sdl --bin uuremot
 and updates the user's launcher, keeping a backup of the previous desktop entry.
 It leaves the system package executable in place. Reopen the viewer from the app menu.
 
-主窗口设备页的独立会话卡片提供 **独立远控**、**会话设置**；常规设置里也可配置当前所选设备。
+主窗口设备页提供 **独立远控**、**会话设置** 和 **传送截图**；常规设置里也可配置当前所选设备。
 配置后，从主窗口或应用菜单打开该设备。独立会话有自己的桌面应用标识，
 重复打开会恢复同一窗口，关闭主窗口不会结束独立会话；明确退出账号会关闭这些会话。
 Dock 的固定功能仍由桌面环境管理。
 
-The device page's session card adds **Independent remote** and **Session settings**.
+The device page adds **Independent remote**, **Session settings**, and **Send screenshot**.
 General settings can also configure the selected device. Each device has its own
 desktop identity; reopening reuses its session, closing the launcher preserves it,
 and explicit sign-out stops independent sessions. Use the desktop's normal pin action.
@@ -103,8 +103,17 @@ IME fix is already included in v0.2.45 and is not reimplemented here.
 ## 图片流程和限制 / Image flow and limits
 
 1. 在 Linux 上复制 PNG 截图或图片。
-2. 右键设备入口，选择 **传送剪贴板图片到 Mac**。
-3. 等待通知；远控会短暂重连。然后在 Mac 聊天框中右键 **粘贴**。
+2. 在个人版主窗口选择 Mac，点击 **传送截图**（或右键设备入口选择 **传送剪贴板图片到 Mac**）。
+3. 等待通知；远控会短暂重连。然后在 Mac 聊天框中右键 **粘贴**，或启用本机快捷键映射后按 Ctrl+V。
+
+直接 Ctrl+V 不会把 Linux 图片传到 Mac；它只粘贴 Mac 当前剪贴板。先在“会话设置”启用图片传送。
+应用菜单使用独立的个人版入口，主窗口标题带“个人版”；安装器隐藏本用户的旧菜单项，保留系统原包。
+
+Enable clipboard images in Session settings. Copy a PNG, select the Mac in the
+personal viewer, click **Send screenshot**, wait for completion, then paste in
+the Mac chat box. Ctrl+V alone only pastes the Mac's current clipboard. The installer
+uses a distinct personal desktop entry and hides the user's old menu item while
+preserving the system package executable. The window title identifies the personal build.
 
 The manual action transfers the current PNG through UU's file tool, then uses the
 Mac terminal tool and AppKit's general pasteboard. It checks the image was accepted,

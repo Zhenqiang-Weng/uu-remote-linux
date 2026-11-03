@@ -9,6 +9,7 @@
 Independent sessions allow taking over an occupied device by default; disable this in Session settings.
 The Mac input adapter repairs missing Shift transitions for `Shift+2` and uppercase letters.
 See the [companion guide](contrib/independent-viewer/README.md) for details.
+For screenshots, click **Send screenshot** in the personal viewer before pasting on the Mac; Ctrl+V alone does not transfer Linux images.
 
 > **A note first**
 >

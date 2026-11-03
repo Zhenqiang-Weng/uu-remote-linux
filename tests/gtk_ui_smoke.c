@@ -106,6 +106,15 @@ static void verify_independent_commands(void) {
     gtk_button_clicked(GTK_BUTTON(settings));
     g_assert_true(uu_viewer_ui_take_command(command, sizeof command));
     g_assert_cmpstr(command, ==, "connect\tdemo-workstation\tindependent-settings");
+    GtkWidget *image = named_button(window, L("传送截图", "Send screenshot"));
+    g_assert_nonnull(image); g_assert_false(gtk_widget_get_sensitive(image));
+    devices[1].online = 1; show_device(1);
+    g_assert_true(gtk_widget_get_sensitive(image));
+    gtk_button_clicked(GTK_BUTTON(image));
+    g_assert_true(uu_viewer_ui_take_command(command, sizeof command));
+    g_assert_cmpstr(command, ==, "connect\tdemo-laptop\tindependent-image");
+    devices[1].online = 0; show_device(1);
+    g_assert_false(gtk_widget_get_sensitive(image)); show_device(0);
 }
 static void verify_badge(void) {
     for (int i = 0; i < 2; i++) {

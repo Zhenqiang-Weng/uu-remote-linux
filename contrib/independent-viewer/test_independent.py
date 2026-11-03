@@ -98,6 +98,16 @@ class IndependentEntryTests(unittest.TestCase):
             focus.assert_called_once_with(helper.paths(key)[1], helper.paths(key)[2])
             run.assert_not_called()
 
+    def test_image_command_routes_to_selected_entry_without_launching_desktop(self):
+        with patch.object(helper.sys, 'argv', [str(SOURCE), 'image', 'fixture-device-two', 'Mac', '4']), \
+                patch.object(helper.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0)) as run, \
+                patch.object(helper, 'launch') as launch:
+            self.assertEqual(helper.main(), 0)
+        args = run.call_args.args[0]
+        self.assertEqual(Path(args[1]).name, 'uuremote-image-clipboard')
+        self.assertEqual(helper.read_entry(args[2])[0]['device_id'], 'fixture-device-two')
+        launch.assert_not_called()
+
     def test_connect_can_take_over_and_keeps_the_selected_device(self):
         first, _ = helper.setup('fixture-device-one', 'Mac', 4)
         second, entry = helper.setup('fixture-device-two', 'PC', 1)

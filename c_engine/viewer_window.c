@@ -58,7 +58,7 @@ static pthread_cond_t init_cond = PTHREAD_COND_INITIALIZER;
 
 static GtkWidget *assist_list;
 static GtkWidget *window, *stack, *title_label, *badge, *more_button, *device_list, *my_section, *all_box,
-    *qr_image, *status_label, *toast, *banner, *fav_stack, *settings_window;
+    *qr_image, *status_label, *toast, *banner, *fav_stack, *settings_window, *image_clipboard_button;
 static int logged_in, selected = -1, banner_closed;
 static char qr_path[512], status_text[256], user_text[128];
 
@@ -217,11 +217,12 @@ static void show_device(int index) {
     if (index < 0 || index >= device_count) { pthread_mutex_unlock(&d_lock); return; }
     selected = index;
     char name[128]; snprintf(name, sizeof name, "%s", devices[index].name);
-    int online = devices[index].online;
+    int online = devices[index].online, mac = devices[index].platform == 4;
     char thumb[512]; snprintf(thumb, sizeof thumb, "%s", devices[index].thumb);
     pthread_mutex_unlock(&d_lock);
     load_thumb(thumb);
     set_header(name, 1);
+    gtk_widget_set_sensitive(image_clipboard_button, mac && online);
     gtk_label_set_text(GTK_LABEL(badge), online ? L("● 在线", "● Online") : L("离线", "Offline"));
     GtkStyleContext *ctx = gtk_widget_get_style_context(badge);
     if (online) gtk_style_context_remove_class(ctx, "off"); else gtk_style_context_add_class(ctx, "off");
@@ -417,8 +418,13 @@ static GtkWidget *build_device(void) {
     gtk_box_pack_end(GTK_BOX(independent), actions, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(page), independent, FALSE, FALSE, 0);
     GtkWidget *tip = hbox(8); gtk_widget_set_margin_top(tip, 18);
-    gtk_box_pack_start(GTK_BOX(tip), icon("dialog-information-symbolic", 15), FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(tip), label(L("在远控画面中按 Ctrl+Alt+M，可打开控制中心。", "Press Ctrl+Alt+M in the remote window to open Control Center."), "session-caption"), FALSE, FALSE, 0);
+    image_clipboard_button = icon_button(L("传送截图", "Send screenshot"), "edit-paste-symbolic", "secondary");
+    g_signal_connect(image_clipboard_button, "clicked", G_CALLBACK(on_tool), "independent-image");
+    gtk_widget_set_sensitive(image_clipboard_button, FALSE);
+    gtk_box_pack_start(GTK_BOX(tip), image_clipboard_button, FALSE, FALSE, 0);
+    GtkWidget *image_hint = label(L("先传送，再到 Mac 按 Ctrl+V 粘贴；传送时会短暂重连。", "Send first, then press Ctrl+V on the Mac to paste. Transfer briefly reconnects."), "session-caption");
+    gtk_label_set_max_width_chars(GTK_LABEL(image_hint), 48);
+    gtk_box_pack_start(GTK_BOX(tip), image_hint, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(page), tip, FALSE, FALSE, 0);
     return page;
 }
@@ -703,10 +709,10 @@ static void *run(void *arg) {
         uu_theme_init();
         uu_theme_load_css(CSS);
         window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-        gtk_window_set_title(GTK_WINDOW(window), L("UU 远程 Linux 控制端（非官方）", "UU Remote Linux viewer (unofficial)"));
+        gtk_window_set_title(GTK_WINDOW(window), L("UU 远程 Linux 控制端（个人版）", "UU Remote Linux viewer (personal)"));
         gtk_window_set_default_size(GTK_WINDOW(window), 1180, 780);
         g_signal_connect(window, "delete-event", G_CALLBACK(on_delete), NULL);
-        own_titlebar(window, L("UU 远程 Linux 控制端（非官方）", "UU Remote Linux viewer (unofficial)"));
+        own_titlebar(window, L("UU 远程 Linux 控制端（个人版）", "UU Remote Linux viewer (personal)"));
         GtkWidget *root = hbox(0);
         // Sidebar
         GtkWidget *side = vbox(0); add_class(side, "sidebar"); gtk_widget_set_size_request(side, 270, -1);

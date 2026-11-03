@@ -37,6 +37,7 @@ if [ -n "$viewer" ]; then
     mkdir -p "$personal_dir"
     install -m 755 "$viewer" "$personal_dir/.viewer-new"
     mv -f "$personal_dir/.viewer-new" "$personal_dir/uuremote-viewer"
+    ln -sfn "$personal_dir/uuremote-viewer" "$bin_dir/uuremote-viewer"
     server=$(command -v uuremote-server || true)
     if [ -x /usr/bin/uuremote-server ]; then server=/usr/bin/uuremote-server; fi
     if [ -n "$server" ]; then ln -sfn "$server" "$personal_dir/uuremote-server"; fi
@@ -48,16 +49,18 @@ from pathlib import Path
 
 directory = Path(os.environ.get('XDG_DATA_HOME', Path.home() / '.local/share')) / 'applications'
 directory.mkdir(parents=True, exist_ok=True)
-target = directory / 'uu-remote-linux-viewer.desktop'
+legacy = directory / 'uu-remote-linux-viewer.desktop'
+target = directory / 'uu-remote-linux-personal-viewer.desktop'
 variables = []
-if target.is_file():
-    previous = target.read_text()
+previous_entry = target if target.is_file() else legacy
+if previous_entry.is_file():
+    previous = previous_entry.read_text()
     for line in previous.splitlines():
         if line.startswith('Exec='):
             for argument in shlex.split(line[5:]):
                 if argument.startswith(('UU_VIEWER_FONT=', 'UU_VIEWER_SIZE=')):
                     variables.append(argument)
-    target.with_suffix('.desktop.before-personal').write_text(previous)
+    previous_entry.with_suffix('.desktop.before-personal').write_text(previous)
 
 def quoted(value):
     return '"' + value.replace('\\', '\\\\\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace('%', '%%') + '"'
@@ -67,6 +70,9 @@ target.write_text('[Desktop Entry]\nType=Application\nName=UU 远程 Linux 控�
                   'Name[en]=UU Remote Linux Viewer (personal)\nExec=' + ' '.join(map(quoted, arguments)) +
                   '\nIcon=uu-remote-linux\nTerminal=false\nCategories=Network;RemoteAccess;\n'
                   'StartupNotify=false\nStartupWMClass=uuremote-viewer\n')
+# A distinct desktop ID prevents the personal viewer sharing the package's
+# cached launcher. Hide only this user's old menu item; retain the stock binary.
+legacy.write_text('[Desktop Entry]\nType=Application\nName=UU Remote Linux Viewer\nHidden=true\nNoDisplay=true\n')
 PY
     if command -v update-desktop-database >/dev/null; then
         update-desktop-database "${XDG_DATA_HOME:-$HOME/.local/share}/applications"
