@@ -58,7 +58,7 @@ static pthread_cond_t init_cond = PTHREAD_COND_INITIALIZER;
 
 static GtkWidget *assist_list;
 static GtkWidget *window, *stack, *title_label, *badge, *more_button, *device_list, *my_section, *all_box,
-    *qr_image, *status_label, *toast, *banner, *fav_stack, *settings_window, *image_clipboard_button;
+    *qr_image, *status_label, *toast, *banner, *fav_stack, *settings_window;
 static int logged_in, selected = -1, banner_closed;
 static char qr_path[512], status_text[256], user_text[128];
 
@@ -217,12 +217,11 @@ static void show_device(int index) {
     if (index < 0 || index >= device_count) { pthread_mutex_unlock(&d_lock); return; }
     selected = index;
     char name[128]; snprintf(name, sizeof name, "%s", devices[index].name);
-    int online = devices[index].online, mac = devices[index].platform == 4;
+    int online = devices[index].online;
     char thumb[512]; snprintf(thumb, sizeof thumb, "%s", devices[index].thumb);
     pthread_mutex_unlock(&d_lock);
     load_thumb(thumb);
     set_header(name, 1);
-    gtk_widget_set_sensitive(image_clipboard_button, mac && online);
     gtk_label_set_text(GTK_LABEL(badge), online ? L("● 在线", "● Online") : L("离线", "Offline"));
     GtkStyleContext *ctx = gtk_widget_get_style_context(badge);
     if (online) gtk_style_context_remove_class(ctx, "off"); else gtk_style_context_add_class(ctx, "off");
@@ -418,11 +417,7 @@ static GtkWidget *build_device(void) {
     gtk_box_pack_end(GTK_BOX(independent), actions, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(page), independent, FALSE, FALSE, 0);
     GtkWidget *tip = hbox(8); gtk_widget_set_margin_top(tip, 18);
-    image_clipboard_button = icon_button(L("传送截图", "Send screenshot"), "edit-paste-symbolic", "secondary");
-    g_signal_connect(image_clipboard_button, "clicked", G_CALLBACK(on_tool), "independent-image");
-    gtk_widget_set_sensitive(image_clipboard_button, FALSE);
-    gtk_box_pack_start(GTK_BOX(tip), image_clipboard_button, FALSE, FALSE, 0);
-    GtkWidget *image_hint = label(L("先传送，再到 Mac 按 Ctrl+V 粘贴；传送时会短暂重连。", "Send first, then press Ctrl+V on the Mac to paste. Transfer briefly reconnects."), "session-caption");
+    GtkWidget *image_hint = label(L("复制截图后，在 Mac 远控窗口按 Ctrl+V 即可粘贴图片。", "Copy a screenshot, then press Ctrl+V in the Mac session to paste the image."), "session-caption");
     gtk_label_set_max_width_chars(GTK_LABEL(image_hint), 48);
     gtk_box_pack_start(GTK_BOX(tip), image_hint, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(page), tip, FALSE, FALSE, 0);

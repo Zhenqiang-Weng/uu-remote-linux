@@ -20,7 +20,7 @@ real screenshots and diagnostic logs are excluded from source commits.
 | 多键组合 / Modifier combinations | 原生 SDL 路径合入上游 #165 的左右 Shift/Ctrl/Alt/Win 状态恢复；独立进程隔离本地 XIM | 4 项原生回归测试；更新程序和旧入口后用户确认 Mac 锁屏输入恢复；@ 取决于远端 ABC/US 布局 |
 | 独立入口更新 / Entry upgrades | 新版主窗口明确传入的 viewer 路径覆盖旧配置；直接打开桌面入口仍使用已保存路径 | 配置测试覆盖替换路径并保留偏好；避免主窗口已更新而独立连接仍调用旧系统程序 |
 | PC 风格快捷键 / PC-style editing | 可选将常用 Ctrl 编辑组合转换为 Command；保留 Shift、Ctrl+Alt 和未列出的组合 | 62 组 SDL 队列检查；不区分远端应用，终端真实 Ctrl+C 需关闭该选项 |
-| PNG 图片传送 / Manual PNG transfer | 主窗口“传送截图”和 Dock 操作复用文件/终端工具，写入 Mac pasteboard，再恢复桌面 | 实机验证用户复制的 PNG 上传与写入；先传后粘贴，不按 Enter、不发送聊天 |
+| 原生 PNG 粘贴 / Native PNG paste | Ctrl+V 按需读取本地图片，经 TEXT_DATA_CHANNEL 格式协商与分块传输，确认后发送 Command+V | 生成图经官方 Mac 验证 SHA-256 一致且可解码；无终端/文件工具、临时文件或重连；失焦/失败不粘贴 |
 | 新旧入口区分 / Local launcher | 独立桌面 ID，隐藏旧菜单项；用户命令指向本地构建，显示名称保留原名和“非官方”标记 | 保留正式版程序，避免应用菜单继续命中旧启动入口 |
 
 字体与画布设置是兼容开关，不强制所有机器启用；按键适配只支持已配置的 Mac
@@ -32,13 +32,12 @@ configured Mac entries and Debian package 0.2.45; it does not binary-patch the s
 viewer. See the companion guide for installation and use.
 
 上游 v0.2.45 的本地 IME 吞键修复（PR #150）作为基线保留，不重复列为个人新增实现。
-图片功能是手动的 PNG 辅助流程，原生 UU 协议仍是文本剪贴板；工具关闭时的共享
-leave 通知通过暂停/恢复所选独立桌面处理，不宣称无缝双向图片同步。
+图片功能已改为内置的 Linux→Mac PNG 粘贴。旧手动辅助脚本保留兼容调用，
+主窗口、设备菜单和设置不再依赖它。范围与协议验证见[原生图片粘贴](native-image-clipboard.md)。
 
-Upstream's v0.2.45 IME fix (PR #150) is retained as baseline work. The PNG helper
-is a manual workflow; native clipboard messages remain text-only. The observed
-shared leave notification is handled by pausing/restoring the selected independent
-desktop, not by claiming seamless image synchronization.
+PNG paste is built into the viewer's native clipboard path. The legacy manual helper
+remains callable for compatibility but is no longer exposed by the launcher/settings.
+See [native image paste](native-image-clipboard.md) for scope and validation.
 
 验证包括：控制端 Rust 测试、GTK 中英/明暗主题界面检查、Python 配置/权限测试、
 真实 SDL dummy 队列的重复键与修饰键检查。实机检查不向源码或日志记录输入与剪贴板内容。

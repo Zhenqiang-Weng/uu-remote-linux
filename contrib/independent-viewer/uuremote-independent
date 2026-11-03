@@ -78,17 +78,12 @@ def save_entry(key, entry):
         return '"' + str(value).replace("\\", "\\\\\\\\").replace('"', '\\"').replace("`", "\\`").replace("$", "\\$").replace("%", "%%") + '"'
 
     helper = Path(__file__).resolve()
-    image = helper.with_name("uuremote-image-clipboard")
     text = ("[Desktop Entry]\nType=Application\nName=" + escaped(entry["name"]) + " · UU 独立远控\n"
             "Name[en]=" + escaped(entry["name"]) + " · UU Independent remote\n"
             "Comment=独立远控窗口 / Independent remote window\n"
             "Exec=/usr/bin/python3 " + argument(helper) + " " + key + "\n"
             "Icon=computer\nTerminal=false\nCategories=Network;RemoteAccess;\n"
             "Keywords=UU;remote;远控;独立;\nStartupNotify=true\nStartupWMClass=" + app_id + "\n")
-    if entry.get("image_clipboard") is True and entry.get("platform") == 4:
-        text += ("Actions=SendClipboardImage;\n\n[Desktop Action SendClipboardImage]\n"
-                 "Name=传送剪贴板图片到 Mac\nName[en]=Send clipboard image to Mac\n"
-                 "Exec=/usr/bin/python3 " + argument(image) + " " + key + "\nIcon=edit-paste\n")
     target = desktop_dir / (app_id + ".desktop")
     private_write(target, text)
     target.chmod(0o644)
@@ -164,7 +159,6 @@ def configure(device, name, platform):
         ("force_join", ui_text("接管已连接的设备", "Take over an occupied device"), ui_text("连接时允许接管另一台电脑或手机正在远控的设备。", "Allow connecting when another computer or phone is controlling this device.")),
         ("pc_shortcuts", ui_text("本机快捷键习惯", "PC-style editing shortcuts"), ui_text("常用 Ctrl 组合对应 Mac Command，保留 Ctrl+Alt。", "Use Command for common Ctrl editing chords; keep Ctrl+Alt.")),
         ("backspace_repeat", ui_text("按键长按连发", "Held-key repeat"), ui_text("字母、数字、符号和退格键长按连发，松开即停。", "Repeat letters, numbers, symbols and Backspace while held; stop on release.")),
-        ("image_clipboard", ui_text("剪贴板图片传送", "Clipboard images"), ui_text("从设备图标菜单传送 PNG 图片，会短暂重连。", "Send PNG images from the device icon menu, with a brief reconnect.")),
     ]:
         controls[field] = switch_row(title, description, bool(entry.get(field, field == "force_join")), field == "force_join" or entry["platform"] == 4)
     size = switch_row(ui_text("画面兼容模式", "Video compatibility"), ui_text("固定 1920×1080 画布，用于部分加载或显示异常。", "Use a fixed 1920×1080 canvas for loading/display issues."), entry.get("UU_VIEWER_SIZE") == "1920x1080")

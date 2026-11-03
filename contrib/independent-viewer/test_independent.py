@@ -56,7 +56,7 @@ class IndependentEntryTests(unittest.TestCase):
         self.assertFalse(reopened['backspace_repeat'])
         desktops = list((self.root / 'data/applications').glob('*.desktop'))
         self.assertEqual(len(desktops), 1)
-        self.assertIn('[Desktop Action SendClipboardImage]', desktops[0].read_text())
+        self.assertNotIn('[Desktop Action SendClipboardImage]', desktops[0].read_text())
 
     def test_explicit_launcher_upgrade_updates_saved_binary_and_keeps_preferences(self):
         key, entry = helper.setup('fixture-device-one', 'Mac', 4)

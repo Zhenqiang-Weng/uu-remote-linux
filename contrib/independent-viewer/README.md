@@ -9,7 +9,7 @@ signed-in viewer, stores per-device settings, and does not modify its network pr
 ## 安装 / Install
 
 Linux 图形用户会话需要 Python 3、systemd 用户服务；设置窗口需要 `python3-gi` 和 GTK3。
-图片传送额外需要 `wl-clipboard`、`notify-send`，Mac 上需允许 UU 文件传输和终端。
+原生 PNG 粘贴内置于更新后的 viewer；X11/XWayland 直接读取本地剪贴板。原生 Wayland 的 SDL2 窗口使用按需 `wl-paste`，需要 `wl-clipboard`。不需要 Mac 文件传输或终端权限。
 按键适配器从本目录 C 源码编译，需要 `cc`；不包含预编译二进制。
 
 Run as the desktop user, with Python 3 and a systemd user manager. The settings
@@ -34,7 +34,7 @@ cargo build --release --locked --features native-viewer,viewer-sdl --bin uuremot
 and updates the user's launcher, keeping a backup of the previous desktop entry.
 It leaves the system package executable in place. Reopen the viewer from the app menu.
 
-主窗口设备页提供 **独立远控**、**会话设置** 和 **传送截图**；常规设置里也可配置当前所选设备。
+主窗口设备页提供 **独立远控**、**会话设置**；图片直接在远控窗口按 Ctrl+V 粘贴，常规设置里也可配置当前所选设备。
 配置后，从主窗口或应用菜单打开该设备。独立会话有自己的桌面应用标识，
 重复打开会恢复同一窗口，关闭主窗口不会结束独立会话；明确退出账号会关闭这些会话。
 Dock 的固定功能仍由桌面环境管理。
@@ -72,7 +72,6 @@ desktop entries contain a hashed configuration key, not account credentials.
 - 常用 Ctrl 快捷键对应 Command：A/C/V/X/Z/F/S/O/N/P/W/L/T/R，保留 Shift，
   保留 Ctrl+Alt 和其他未列出的组合。不按远端应用识别终端：启用后 Ctrl+C 是 Command+C，
   要发送真实 Control+C，请在设置中关闭该选项。
-- 图片传送：启用后，在该设备的 Dock / 应用菜单入口右键选择“传送剪贴板图片到 Mac”。
 
 Options select a CJK font, an optional fixed decoder canvas, held-key repeats,
 PC-style editing shortcuts, and a manual image-transfer action. Mapped Ctrl chords
@@ -107,34 +106,22 @@ IME fix is already included in v0.2.45 and is not reimplemented here.
 
 ## 图片流程和限制 / Image flow and limits
 
-1. 在 Linux 上复制 PNG 截图或图片。
-2. 在个人版主窗口选择 Mac，点击 **传送截图**（或右键设备入口选择 **传送剪贴板图片到 Mac**）。
-3. 等待通知；远控会短暂重连。然后在 Mac 聊天框中右键 **粘贴**，或启用本机快捷键映射后按 Ctrl+V。
+复制 PNG 截图后，在 Mac 远控窗口按 Ctrl+V（或 Command/Win+V）。这是 viewer 内置
+功能，无须开启“图片传送”。确认所有图片数据块后才发送粘贴键，不按 Enter，不发送聊天。
 
-直接 Ctrl+V 不会把 Linux 图片传到 Mac；它只粘贴 Mac 当前剪贴板。先在“会话设置”启用图片传送。
-应用菜单显示原名 UU Remote Linux Viewer，中文主窗口保留“非官方”标记；安装器沿用独立桌面 ID，隐藏本用户的旧菜单项，保留系统原包。
+Copy a PNG screenshot, then press Ctrl+V (or Command/Win+V) in the Mac session.
+The viewer transfers the image over the native clipboard channel before sending the
+paste chord. No separate image switch, remote terminal, file tools or reconnect is needed.
 
-Enable clipboard images in Session settings. Copy a PNG, select the Mac in the
-personal viewer, click **Send screenshot**, wait for completion, then paste in
-the Mac chat box. Ctrl+V alone only pastes the Mac's current clipboard. The installer
-uses a distinct personal desktop entry and hides the user's old menu item while
-preserving the system package executable. The app keeps the original UU Remote Linux Viewer name and unofficial window title.
+仅 Linux→Mac PNG，最大 32 MiB；文件、图片列表和反向图片同步不在本次范围内。
+X11/XWayland 原生读图支持大图 INCR；SDL2 原生 Wayland 使用按需 `wl-paste`，
+尚未完成各桌面的实机验证。窗口失焦、读取失败、超限或确认超时会取消粘贴。
+旧 `uuremote-image-clipboard` 手动脚本保留用于兼容，已移出主窗口和设备菜单。
+完整说明见 [native-image-clipboard.md](../../docs/native-image-clipboard.md)。
 
-The manual action transfers the current PNG through UU's file tool, then uses the
-Mac terminal tool and AppKit's general pasteboard. It checks the image was accepted,
-removes temporary files, and restores the independent desktop. It never sends
-Enter or submits a chat. The native UU clipboard protocol remains text-only.
-
-当前官方 Mac 被控端在独立工具关闭时会发出共享的 leave 通知，因此脚本会明确暂停桌面，
-在工具完成后恢复。不是无缝双向图片同步。需要 Mac 已登录、终端可用；不用于锁屏密码框。
-仅处理 PNG（最大 32 MiB），不处理文件、视频或图片列表。窗口唤回已验证 X11/XWayland；
-纯 Wayland 的前台激活取决于桌面环境，未完成实机验证。
-
-Official Mac tool shutdown was observed to release the concurrent desktop, so the
-script explicitly pauses/restores that session. This is not seamless bidirectional
-image synchronization. It needs a logged-in Mac and working terminal access, and is
-not for password prompts. PNG only, up to 32 MiB. X11/XWayland window restoration
-was verified; native Wayland activation remains unverified.
+Linux→Mac PNG only, up to 32 MiB. Native Wayland's on-demand SDL2 fallback still
+needs compositor-specific acceptance. The legacy manual helper remains callable,
+but the launcher and device menu no longer expose it. See the linked protocol notes.
 
 ## 验证 / Validation
 
