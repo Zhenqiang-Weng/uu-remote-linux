@@ -21,6 +21,7 @@ real screenshots and diagnostic logs are excluded from source commits.
 | 独立入口更新 / Entry upgrades | 新版主窗口明确传入的 viewer 路径覆盖旧配置；直接打开桌面入口仍使用已保存路径 | 配置测试覆盖替换路径并保留偏好；避免主窗口已更新而独立连接仍调用旧系统程序 |
 | PC 风格快捷键 / PC-style editing | 可选将常用 Ctrl 编辑组合转换为 Command；保留 Shift、Ctrl+Alt 和未列出的组合 | 62 组 SDL 队列检查；不区分远端应用，终端真实 Ctrl+C 需关闭该选项 |
 | 原生 PNG 粘贴 / Native PNG paste | Ctrl+V 按需读取本地图片，经 TEXT_DATA_CHANNEL 格式协商与分块传输，确认后发送 Command+V | 生成图经官方 Mac 验证 SHA-256 一致且可解码；无终端/文件工具、临时文件或重连；失焦/失败不粘贴 |
+| 远端指针形状 / Remote cursor shapes | 接收 SystemStateChange 的 PNG 指针，在 SDL 窗口显示远端形状与热点；移出画面或操作本地菜单时恢复箭头 | PNG 解码与尺寸受限、只保留最新形状；已在 Mac 收到并应用指针数据；窗口缩小时保留可见光标大小 |
 | 新旧入口区分 / Local launcher | 独立桌面 ID，隐藏旧菜单项；用户命令指向本地构建，显示名称保留原名和“非官方”标记 | 保留正式版程序，避免应用菜单继续命中旧启动入口 |
 
 字体与画布设置是兼容开关，不强制所有机器启用；按键适配只支持已配置的 Mac
