@@ -112,13 +112,13 @@ IME fix is already included in v0.2.45 and is not reimplemented here.
 3. 等待通知；远控会短暂重连。然后在 Mac 聊天框中右键 **粘贴**，或启用本机快捷键映射后按 Ctrl+V。
 
 直接 Ctrl+V 不会把 Linux 图片传到 Mac；它只粘贴 Mac 当前剪贴板。先在“会话设置”启用图片传送。
-应用菜单使用独立的个人版入口，主窗口标题带“个人版”；安装器隐藏本用户的旧菜单项，保留系统原包。
+应用菜单显示原名 UU Remote Linux Viewer，中文主窗口保留“非官方”标记；安装器沿用独立桌面 ID，隐藏本用户的旧菜单项，保留系统原包。
 
 Enable clipboard images in Session settings. Copy a PNG, select the Mac in the
 personal viewer, click **Send screenshot**, wait for completion, then paste in
 the Mac chat box. Ctrl+V alone only pastes the Mac's current clipboard. The installer
 uses a distinct personal desktop entry and hides the user's old menu item while
-preserving the system package executable. The window title identifies the personal build.
+preserving the system package executable. The app keeps the original UU Remote Linux Viewer name and unofficial window title.
 
 The manual action transfers the current PNG through UU's file tool, then uses the
 Mac terminal tool and AppKit's general pasteboard. It checks the image was accepted,

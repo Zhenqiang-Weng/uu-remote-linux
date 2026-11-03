@@ -20,7 +20,7 @@ real screenshots and diagnostic logs are excluded from source commits.
 | Shift 组合键 / Shift chords | 按 SDL 左右 Shift 快照修复遗漏的状态转换；独立进程隔离本地 XIM | 113 组队列检查；用户实机确认 @ 和大写正常；@ 取决于远端 ABC/US 布局 |
 | PC 风格快捷键 / PC-style editing | 可选将常用 Ctrl 编辑组合转换为 Command；保留 Shift、Ctrl+Alt 和未列出的组合 | 62 组 SDL 队列检查；不区分远端应用，终端真实 Ctrl+C 需关闭该选项 |
 | PNG 图片传送 / Manual PNG transfer | 主窗口“传送截图”和 Dock 操作复用文件/终端工具，写入 Mac pasteboard，再恢复桌面 | 实机验证用户复制的 PNG 上传与写入；先传后粘贴，不按 Enter、不发送聊天 |
-| 新旧入口区分 / Personal launcher | 独立桌面 ID、个人版窗口标题，隐藏旧菜单项；用户命令指向个人版 | 保留正式版程序，避免应用菜单继续命中旧启动入口 |
+| 新旧入口区分 / Local launcher | 独立桌面 ID，隐藏旧菜单项；用户命令指向本地构建，显示名称保留原名和“非官方”标记 | 保留正式版程序，避免应用菜单继续命中旧启动入口 |
 
 字体与画布设置是兼容开关，不强制所有机器启用；按键适配只支持已配置的 Mac
 和 Debian 包 0.2.45。原始 `/usr/bin` 程序不被二进制修改。

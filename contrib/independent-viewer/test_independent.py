@@ -126,6 +126,26 @@ class IndependentEntryTests(unittest.TestCase):
             helper.run(second)
         self.assertEqual(execute.call_args.args[1][3], 'false')
 
+    def test_unsupported_or_missing_package_runs_without_input_adapter(self):
+        key, _ = helper.setup('fixture-device-one', 'Mac', 4)
+        adapter = self.root / '.local/lib/uuremote-independent/libuuremote-backspace-repeat.so'
+        adapter.parent.mkdir(parents=True)
+        adapter.touch()
+        for outcome in [subprocess.CompletedProcess([], 0, '0.2.47'),
+                        FileNotFoundError(), subprocess.TimeoutExpired('dpkg-query', 5)]:
+            with self.subTest(outcome=type(outcome).__name__), \
+                    patch.object(helper.Path, 'home', return_value=self.root), \
+                    patch.object(helper.subprocess, 'run') as query, \
+                    patch.object(helper.os, 'execve') as execute, \
+                    patch.object(helper.os, 'umask'):
+                if isinstance(outcome, Exception):
+                    query.side_effect = outcome
+                else:
+                    query.return_value = outcome
+                helper.run(key)
+                execute.assert_called_once()
+                self.assertNotIn(str(adapter), execute.call_args.args[2].get('LD_PRELOAD', ''))
+
     def test_shift_recovery_does_not_require_optional_shortcuts_or_repeat(self):
         key, _ = helper.setup('fixture-device-one', 'Mac', 4)
         adapter = self.root / '.local/lib/uuremote-independent/libuuremote-backspace-repeat.so'

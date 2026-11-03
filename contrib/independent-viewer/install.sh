@@ -66,8 +66,8 @@ def quoted(value):
     return '"' + value.replace('\\', '\\\\\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace('%', '%%') + '"'
 
 arguments = ['/usr/bin/env', *variables, sys.argv[1], 'ui']
-target.write_text('[Desktop Entry]\nType=Application\nName=UU 远程 Linux 控制端（个人版）\n'
-                  'Name[en]=UU Remote Linux Viewer (personal)\nExec=' + ' '.join(map(quoted, arguments)) +
+target.write_text('[Desktop Entry]\nType=Application\nName=UU Remote Linux Viewer\n'
+                  'Name[zh_CN]=UU 远程 Linux 控制端（非官方）\nExec=' + ' '.join(map(quoted, arguments)) +
                   '\nIcon=uu-remote-linux\nTerminal=false\nCategories=Network;RemoteAccess;\n'
                   'StartupNotify=false\nStartupWMClass=uuremote-viewer\n')
 # A distinct desktop ID prevents the personal viewer sharing the package's

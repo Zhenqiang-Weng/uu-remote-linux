@@ -6,6 +6,8 @@
 > v0.2.45, with independent sessions, per-device compatibility settings and Mac input/image helpers.
 > See the [improvement record](docs/personal-improvements.md). The original author's notes and GPL-3.0 license follow.
 
+The app retains the original UU Remote Linux Viewer name and unofficial window title.
+
 Independent sessions allow taking over an occupied device by default; disable this in Session settings.
 The Mac input adapter repairs missing Shift transitions for `Shift+2` and uppercase letters.
 See the [companion guide](contrib/independent-viewer/README.md) for details.

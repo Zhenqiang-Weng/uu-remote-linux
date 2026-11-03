@@ -6,6 +6,8 @@
 > 供个人使用。新增独立远控、设备兼容设置及 Mac 输入/图片辅助功能，见[本次改善清单](docs/personal-improvements.md)。
 > 原作者说明与 GPL-3.0 许可证保留如下。
 
+应用名称沿用原名 UU Remote Linux Viewer，窗口保留“非官方”标记。
+
 个人版独立入口默认允许接管已被其他设备远控的电脑，可在“会话设置”关闭；
 Mac 按键适配会恢复丢失的 Shift 状态，支持 `Shift+2` 和大写字母，详见[组件说明](contrib/independent-viewer/README.md)。
 截图请先点个人版主窗口的“传送截图”，完成后再到 Mac 粘贴；直接 Ctrl+V 不会传输 Linux 图片。

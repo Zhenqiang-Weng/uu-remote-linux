@@ -382,11 +382,16 @@ def run(key):
     # SDL2 adapter scoped to the requested Mac entry and this package version.
     adapter = Path.home() / ".local/lib/uuremote-independent/libuuremote-backspace-repeat.so"
     if entry.get("platform") == 4 and adapter.is_file():
-        version = subprocess.run(
-            ["/usr/bin/dpkg-query", "-W", "-f=${Version}", "uu-remote-linux"],
-            capture_output=True, text=True, timeout=5,
-        )
-        if version.returncode == 0 and version.stdout.strip() == "0.2.45":
+        supported = False
+        try:
+            version = subprocess.run(
+                ["/usr/bin/dpkg-query", "-W", "-f=${Version}", "uu-remote-linux"],
+                capture_output=True, text=True, timeout=5,
+            )
+            supported = version.returncode == 0 and version.stdout.strip() == "0.2.45"
+        except (OSError, subprocess.SubprocessError):
+            pass  # Missing/failed package detection must not prevent a normal session.
+        if supported:
             previous = environment.get("LD_PRELOAD", "")
             environment["LD_PRELOAD"] = str(adapter) + ((":" + previous) if previous else "")
             environment["UU_VIEWER_BACKSPACE_REPEAT"] = "1" if entry.get("backspace_repeat") else "0"

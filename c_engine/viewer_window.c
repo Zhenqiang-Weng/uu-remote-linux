@@ -709,10 +709,10 @@ static void *run(void *arg) {
         uu_theme_init();
         uu_theme_load_css(CSS);
         window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-        gtk_window_set_title(GTK_WINDOW(window), L("UU 远程 Linux 控制端（个人版）", "UU Remote Linux viewer (personal)"));
+        gtk_window_set_title(GTK_WINDOW(window), L("UU 远程 Linux 控制端（非官方）", "UU Remote Linux viewer (unofficial)"));
         gtk_window_set_default_size(GTK_WINDOW(window), 1180, 780);
         g_signal_connect(window, "delete-event", G_CALLBACK(on_delete), NULL);
-        own_titlebar(window, L("UU 远程 Linux 控制端（个人版）", "UU Remote Linux viewer (personal)"));
+        own_titlebar(window, L("UU 远程 Linux 控制端（非官方）", "UU Remote Linux viewer (unofficial)"));
         GtkWidget *root = hbox(0);
         // Sidebar
         GtkWidget *side = vbox(0); add_class(side, "sidebar"); gtk_widget_set_size_request(side, 270, -1);
