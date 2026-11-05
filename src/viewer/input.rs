@@ -58,15 +58,15 @@ impl Viewport {
     }
 }
 #[derive(Default)]
-pub struct Input { view_only:bool, mac:bool, keys:BTreeMap<i32,i32>, buttons:BTreeSet<i32> }
+pub struct Input { view_only:bool, mac:bool, keys:BTreeMap<i32,i32>, buttons:BTreeSet<i32>, scroll:super::smooth_scroll::Scroll }
 pub fn view_only(argument:Option<&str>,environment:Option<&str>)->Result<bool,String> {
     match argument {None=>Ok(environment==Some("1")),Some("--view-only")=>Ok(true),_=>Err("Expected --view-only".into())}
 }
 impl Input {
     pub fn new(view_only:bool)->Self {Self{view_only,..Default::default()}}
-    pub fn set_mac(&mut self,mac:bool){self.mac=mac;}
+    pub fn set_mac(&mut self,mac:bool){self.cancel_scroll();self.mac=mac;}
     pub fn enabled(&self)->bool {!self.view_only}
-    pub fn set_view_only(&mut self,view_only:bool){self.view_only=view_only;}
+    pub fn set_view_only(&mut self,view_only:bool){self.cancel_scroll();self.view_only=view_only;}
     pub fn key(&mut self,scan:i32,down:bool)->Option<Value> {
         if self.view_only {return None}
         let vk=if self.mac{mac_keycode(scan)}else{windows_vk(scan)}?;
@@ -77,12 +77,14 @@ impl Input {
             if self.keys.remove(&scan).is_none(){return None}
             !self.keys.values().any(|v|*v==vk)
         };
+        if changed{self.cancel_scroll();}
         changed.then(||json!({"action":if down{"kbd_press"}else{"kbd_release"},"key":vk}))
     }
     pub fn button(&mut self,button:i32,down:bool)->Option<Value> {
         if self.view_only {return None}
         if !matches!(button,1|2|4) {return None}
         let changed=if down{self.buttons.insert(button)}else{self.buttons.remove(&button)};
+        if changed{self.cancel_scroll();}
         changed.then(||json!({"action":if down{"mouse_press"}else{"mouse_release"},"button":button}))
     }
     /// SDL wheel units are notches; the wire uses the Mac convention (one notch = 120).
@@ -93,7 +95,23 @@ impl Input {
         if dx==0&&dy==0 {return None}
         Some(json!({"action":"mouse_scroll","delta_x":dx,"delta_y":dy}))
     }
+    pub fn smooth_scroll(&mut self,x:f64,y:f64,now:std::time::Instant)->Option<Value>{
+        if !x.is_finite()||!y.is_finite(){self.cancel_scroll();return None}
+        // The official Mac host creates pixel-unit CG scroll events. Interpolate
+        // only plain, discrete ticks; precise input and modified/drag scrolling stay direct.
+        if !self.mac||self.view_only||!self.keys.is_empty()||!self.buttons.is_empty()
+            ||x.fract()!=0.||y.fract()!=0.||x.abs()>8.||y.abs()>8. {
+            self.cancel_scroll();return self.scroll(x,y)
+        }
+        self.scroll.push((x*120.) as i32,(y*120.) as i32,now).map(scroll_message)
+    }
+    pub fn poll_scroll(&mut self,now:std::time::Instant)->Option<Value>{
+        if self.view_only{self.cancel_scroll();return None}
+        self.scroll.poll(now).map(scroll_message)
+    }
+    pub fn cancel_scroll(&mut self){self.scroll.cancel();}
     pub fn release_all(&mut self)->Vec<Value> {
+        self.cancel_scroll();
         let mut out=Vec::new();
         for key in std::mem::take(&mut self.keys).into_values().collect::<BTreeSet<_>>() {out.push(json!({"action":"kbd_release","key":key}));}
         for button in std::mem::take(&mut self.buttons) {out.push(json!({"action":"mouse_release","button":button}));}
@@ -101,6 +119,7 @@ impl Input {
     }
     pub fn heartbeat()->Value {json!({"heartbeat":"kbd_heartbeat"})}
 }
+fn scroll_message((x,y):(i32,i32))->Value{json!({"action":"mouse_scroll","delta_x":x,"delta_y":y})}
 #[cfg(test)] mod tests {
     use super::*;
     #[test] fn mac_target_uses_native_codes_and_releases_same_keys(){
@@ -143,6 +162,30 @@ impl Input {
         assert_eq!(i.scroll(0.,0.1).unwrap()["delta_y"],12); // precise trackpad deltas
         assert!(i.scroll(0.,0.).is_none());
         assert!(Input::new(true).scroll(0.,1.).is_none());
+    }
+    #[test] fn mac_discrete_wheels_interpolate_but_precise_and_modified_input_stays_direct(){
+        let now=std::time::Instant::now();let mut input=Input::default();input.set_mac(true);
+        assert_eq!(input.smooth_scroll(0.,1.,now).unwrap()["delta_y"],12);
+        assert_eq!(input.poll_scroll(now+std::time::Duration::from_millis(72)).unwrap()["delta_y"],108);
+        for scan in 224..=231 {
+            input.key(scan,true);assert_eq!(input.smooth_scroll(0.,1.,now).unwrap()["delta_y"],120);
+            assert!(input.poll_scroll(now+std::time::Duration::from_secs(1)).is_none());input.release_all();
+        }
+        input.button(1,true);assert_eq!(input.smooth_scroll(0.,1.,now).unwrap()["delta_y"],120);input.release_all();
+        assert_eq!(input.smooth_scroll(0.,0.25,now).unwrap()["delta_y"],30);
+        assert!(input.poll_scroll(now+std::time::Duration::from_secs(1)).is_none());
+        input.set_mac(false);assert_eq!(input.smooth_scroll(0.,1.,now).unwrap()["delta_y"],120);
+    }
+    #[test] fn input_state_changes_cancel_the_scroll_tail(){
+        let now=std::time::Instant::now();
+        for change in 0..5 {
+            let mut input=Input::default();input.set_mac(true);input.smooth_scroll(0.,1.,now);
+            match change{0=>{input.release_all();},1=>input.set_view_only(true),2=>input.set_mac(false),
+                3=>{input.key(225,true);},_=>{input.button(1,true);}}
+            assert!(input.poll_scroll(now+std::time::Duration::from_secs(1)).is_none());
+        }
+        let mut watch=Input::new(true);watch.set_mac(true);assert!(watch.smooth_scroll(0.,1.,now).is_none());
+        assert!(watch.poll_scroll(now+std::time::Duration::from_secs(1)).is_none());
     }
     #[test] fn mappings_encoding_and_focus() {
         for (scan,vk) in [(4,65),(29,90),(39,48),(58,112),(80,37),(224,162),(230,165),(52,222)] {assert_eq!(windows_vk(scan),Some(vk));}

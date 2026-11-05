@@ -670,6 +670,12 @@ connections look up the selected device only when the platform is absent; assist
 View-only sessions skip this lookup. Media keys and some JIS-specific keys are not mapped; Mac platform detection for remote
 assistance and ISO / JIS keyboards have not been tested live.
 
+For Mac targets, plain whole-notch mouse wheel input is spread over roughly 80 ms in small steps,
+preserving its total distance when uninterrupted. Fine trackpad deltas, modified scrolling, dragging,
+and wheel events delayed by an image paste are forwarded directly. Keys, clicks, pointer movement,
+leaving the window, or switching to view-only cancel the remaining steps; reversing direction cancels
+the unfinished movement on that axis immediately.
+
 **Tested live** (author's setup, not full acceptance):
 | Feature | Official Windows host | Official Mac host | This project's Linux host |
 |---|---|---|---|

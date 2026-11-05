@@ -95,7 +95,12 @@ impl Window {
         let events=poll_events(&mut self.events);self.poll_batch(input,events)
     }
     fn poll_batch(&mut self,input:&mut Input,events:Vec<Event>)->(bool,Vec<serde_json::Value>){
+        self.poll_batch_at(input,events,std::time::Instant::now())
+    }
+    fn poll_batch_at(&mut self,input:&mut Input,events:Vec<Event>,now:std::time::Instant)->(bool,Vec<serde_json::Value>){
         let viewport=self.viewport();
+        let mut smooth=self.paste.is_none();
+        if !self.focused||!input.enabled()||self.chrome.menu.open{input.cancel_scroll();}
         let mut redraw=false;let mut quit=false;
         let mut forward=Vec::with_capacity(events.len());let mut prefix=Vec::new();
         // Never replay delayed paste into a new focus, a menu, or a changed selection.
@@ -115,6 +120,8 @@ impl Window {
         if self.notice.as_ref().is_some_and(|(_,until)|*until<std::time::Instant::now()){self.notice=None;redraw=true;}
         let mut event_focused=self.focused;
         for event in events {
+            // Includes local chrome, pointer leave/motion, and events consumed below.
+            if !matches!(event,Event::MouseWheel{..}){input.cancel_scroll();}
             let modifiers=self.physical_modifiers.observe(&event);
             // The pre-pass protects an already finished transfer; this also
             // cancels one started by an earlier event in this same SDL batch.
@@ -128,6 +135,7 @@ impl Window {
             if consumed {continue}
             if self.paste.is_none() && self.mac && event_focused && input.enabled() && paste_chord(&event) {
                 if let Some(tx)=self.image_tx.clone(){
+                    smooth=false;input.cancel_scroll();
                     // Commit earlier presses before buffering this shortcut. A later
                     // same-batch cancellation must release them before forwarding a click.
                     let(stopped,messages)=translate_input(std::mem::take(&mut forward),input,viewport,&mut self.focused,&mut self.files);
@@ -153,8 +161,12 @@ impl Window {
             }}
             forward.push(InputEvent{event,modifiers});
         }
-        let (stopped,messages)=translate_input(forward,input,viewport,&mut self.focused,&mut self.files);
-        prefix.extend(messages);let result=(quit||stopped,prefix);
+        let (stopped,messages)=translate_input_mode(forward,input,viewport,&mut self.focused,&mut self.files,smooth.then_some(now));
+        prefix.extend(messages);
+        if !quit&&!stopped&&self.focused&&input.enabled()&&!self.chrome.menu.open&&self.paste.is_none(){
+            prefix.extend(input.poll_scroll(now));
+        }else{input.cancel_scroll();}
+        let result=(quit||stopped,prefix);
         // A compositor resize (tiling, maximize) leaves the surface without a buffer of the new size
         // until the next frame; a static remote desktop sends none, so repaint the last frame now.
         if redraw {if let Some(frame)=self.last_frame.take(){
@@ -421,8 +433,12 @@ fn translate_actions(events:impl IntoIterator<Item=Event>,input:&mut Input,viewp
         translate_input(events.into_iter().map(InputEvent::from),input,viewport,focused,files)
 }
 fn translate_input(events:impl IntoIterator<Item=InputEvent>,input:&mut Input,viewport:Viewport,focused:&mut bool,files:&mut bool)->(bool,Vec<serde_json::Value>){
+        translate_input_mode(events,input,viewport,focused,files,None)
+}
+fn translate_input_mode(events:impl IntoIterator<Item=InputEvent>,input:&mut Input,viewport:Viewport,focused:&mut bool,files:&mut bool,smooth:Option<std::time::Instant>)->(bool,Vec<serde_json::Value>){
         let mut messages=Vec::new();let mut quit=false;
         for InputEvent{event,modifiers} in events{
+            if !matches!(event,Event::MouseWheel{..}){input.cancel_scroll();}
             if *focused&&input.enabled(){if let Some(modifiers)=modifiers{messages.extend(sync_modifiers(input,modifiers));}}
             let message=match event {
                 Event::Quit{..}|Event::Window{win_event:WindowEvent::Close,..}=>{quit=true;messages.extend(input.release_all());None},
@@ -448,7 +464,8 @@ fn translate_input(events:impl IntoIterator<Item=InputEvent>,input:&mut Input,vi
                 Event::MouseWheel{x,y,precise_x,precise_y,direction,..}=>{
                     let(dx,dy)=if precise_x!=0.||precise_y!=0.{(f64::from(precise_x),f64::from(precise_y))}else{(f64::from(x),f64::from(y))};
                     let(dx,dy)=match direction{sdl2::mouse::MouseWheelDirection::Flipped=>(-dx,-dy),_=>(dx,dy)};
-                    input.scroll(dx,dy)
+                    if let Some(now)=smooth{input.smooth_scroll(dx,dy,now)}
+                    else{input.cancel_scroll();input.scroll(dx,dy)}
                 },
                 _=>None,
             };if let Some(m)=message{
@@ -900,6 +917,36 @@ async fn pump_type_job(job: &mut TypeJob, session: &mut Session, window: &mut Wi
     fn image_test_button(id:u32,mouse_btn:MouseButton,down:bool)->Event {
         if down{Event::MouseButtonDown{timestamp:0,window_id:id,which:0,mouse_btn,clicks:1,x:300,y:300}}
         else{Event::MouseButtonUp{timestamp:0,window_id:id,which:0,mouse_btn,clicks:1,x:300,y:300}}
+    }
+    #[cfg_attr(target_os="macos",ignore)]
+    #[tokio::test] async fn mac_scroll_is_smooth_and_stops_at_input_boundaries(){
+        if isolated_image_test("viewer::sdl::tests::mac_scroll_is_smooth_and_stops_at_input_boundaries"){return}
+        use sdl2::{keyboard::{Scancode as S,Mod as M},mouse::MouseWheelDirection as D};
+        let mut window=Window::new().unwrap();window.mac=true;window.chrome.font=None;
+        let id=window.canvas.window().id();let now=std::time::Instant::now();
+        let wheel=||Event::MouseWheel{timestamp:0,window_id:id,which:0,mouse_x:300,mouse_y:300,x:0,y:1,precise_x:0.,precise_y:1.,direction:D::Normal};
+        for same_batch in [true,false]{for cancel in [
+            image_test_key(id,S::Num2,true,M::LSHIFTMOD),image_test_button(id,MouseButton::Left,true),
+            Event::Window{timestamp:0,window_id:id,win_event:WindowEvent::FocusLost},
+            Event::Window{timestamp:0,window_id:id,win_event:WindowEvent::Leave},
+            Event::MouseMotion{timestamp:0,window_id:id,which:0,mousestate:sdl2::mouse::MouseState::from_sdl_state(0),x:310,y:310,xrel:10,yrel:10},
+            Event::Quit{timestamp:0}]{
+            let mut input=Input::default();input.set_mac(true);window.focused=true;window.physical_modifiers=Modifiers::default();
+            let mut batch=vec![wheel()];if same_batch{batch.push(cancel.clone());}
+            let mut messages=window.poll_batch_at(&mut input,batch,now).1;
+            if !same_batch{messages.extend(window.poll_batch_at(&mut input,vec![cancel.clone()],now+std::time::Duration::from_millis(2)).1);}
+            assert_eq!(messages.iter().filter(|m|m["action"]=="mouse_scroll").map(|m|m["delta_y"].as_i64().unwrap()).sum::<i64>(),12);
+            assert!(input.poll_scroll(now+std::time::Duration::from_secs(1)).is_none());
+            if matches!(cancel,Event::KeyDown{..}){
+                let keys:Vec<_>=messages.iter().filter(|m|m["action"]=="kbd_press").map(|m|m["key"].as_i64().unwrap()).collect();
+                assert_eq!(keys,vec![56,19]); // Shift+2 remains a native physical-key chord.
+            }
+        }}
+        let mut input=Input::default();input.set_mac(true);window.focused=true;window.physical_modifiers=Modifiers::default();
+        let mut messages=window.poll_batch_at(&mut input,vec![wheel()],now).1;
+        messages.extend(window.poll_batch_at(&mut input,vec![],now+std::time::Duration::from_millis(80)).1);
+        assert_eq!(messages.iter().map(|m|m["delta_y"].as_i64().unwrap()).sum::<i64>(),120);
+        assert!(window.poll_batch(&mut input,vec![]).1.is_empty());
     }
     #[cfg_attr(target_os="macos",ignore)]
     #[tokio::test] async fn image_paste_preserves_modifiers_on_later_clicks(){

@@ -10,6 +10,7 @@ pub mod session;
 pub mod media;
 pub mod audio;
 pub mod input;
+mod smooth_scroll;
 pub mod desktop;
 #[cfg(feature="viewer-ffmpeg")] pub mod decoder;
 #[cfg(any(test,feature="viewer-sdl"))] pub mod decoder_cli;
